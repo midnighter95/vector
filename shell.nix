@@ -44,12 +44,24 @@ let
     '';
   };
 
+  # nix cc-wrapper will add --gcc-toolchain to clang flags. However, when we want to use
+  # our custom libc and compilerrt, clang will only search these libs in --gcc-toolchain 
+  # folder. To avoid this wierd behavior of clang, we need to remove --gcc-toolchain options
+  # from cc-wrapper
+  my-cc-wrapper = let cc = myLLVM.clang; in pkgs.runCommand "cc" {} ''
+    mkdir -p "$out"
+    cp -rT "${cc}" "$out"
+    chmod -R +w "$out"
+    sed -i 's/--gcc-toolchain=[^[:space:]]*//' "$out/nix-support/cc-cflags"
+    sed -i 's|${cc}|${placeholder "out"}|g' "$out"/bin/* "$out"/nix-support/*
+  '';
+
 in pkgs.mkShellNoCC {
     name = "vector";
     buildInputs = with pkgs; [
-      myLLVM.clang
       myLLVM.llvm
       myLLVM.bintools
+      my-cc-wrapper
 
       jdk mill python3
       parallel protobuf ninja verilator antlr4 numactl dtc glibc_multi cmake
@@ -60,6 +72,7 @@ in pkgs.mkShellNoCC {
       fmt glog
     ];
     shellHook = ''
-      export NIX_CC=" "
-    '';  # due to some cmake bug
+      # because we removed --gcc-toolchain from cc-wrapper, we need to add gcc lib path back
+      export NIX_LDFLAGS_FOR_TARGET="$NIX_LDFLAGS_FOR_TARGET -L${pkgs.gccForLibs.lib}/lib"
+    '';
   }
