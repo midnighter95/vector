@@ -298,7 +298,7 @@ object cases extends Module {
       PathRef(T.ctx.dest / "linker.ld")
     }
     def compile: T[PathRef] = T {
-      os.proc(Seq("/nix/store/jfliw7lqqfchrmnb21xi5d5pmxk1lvyg-clang-14.0.6/bin/clang", "-o", name() + ".elf" ,"--target=riscv32", "-march=rv32gcv", s"-L${musl.compile().path}/lib", s"-L${compilerrt.compile().path}/lib/riscv32", "-mno-relax", s"-T${linkScript().path}") ++ allSourceFiles().map(_.path.toString)).call(T.ctx.dest)
+      os.proc(Seq("clang", "-o", name() + ".elf" ,"--target=riscv32", "-march=rv32gcv", s"-L${musl.compile().path}/lib", s"-L${compilerrt.compile().path}/lib/riscv32", "-mno-relax", s"-T${linkScript().path}") ++ allSourceFiles().map(_.path.toString)).call(T.ctx.dest)
       os.proc(Seq("llvm-objcopy", "-O", "binary", "--only-section=.text", name() + ".elf", name())).call(T.ctx.dest)
       PathRef(T.ctx.dest / name())
     }
