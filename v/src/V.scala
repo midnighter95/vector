@@ -77,6 +77,7 @@ class V(param: VParam) extends Module {
   val csrInterface:     LaneCsrInterface = IO(Input(new LaneCsrInterface(param.laneParam.VLMaxWidth)))
   val storeBufferClear: Bool = IO(Input(Bool()))
   val tlPort:           Vec[TLBundle] = IO(Vec(param.tlBank, param.tlParam.bundle()))
+  val lsuIndex:         UInt = IO(Output(UInt(3.W)))
 
   val lsu: LSU = Module(new LSU(param.lsuParma))
   // 给指令打一个tag用来分新老
@@ -282,4 +283,5 @@ class V(param: VParam) extends Module {
     respValid := deq.last
     resp.bits.data := resultRes.bits
   }
+  lsuIndex := lsu.lsuIndex
 }
