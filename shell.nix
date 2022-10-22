@@ -13,15 +13,15 @@ let
       sha256 = "sha256-z5By57VbmIt4sgRgvECnLbZklnDDWUA6fyvWVyXUzsI=";
     };
   };
-  circt = pkgs.stdenv.mkDerivation rec {
+  circt = pkgs.stdenv.mkDerivation {
     pname = "circt";
     version = "r4396.ce85204ca";
     nativeBuildInputs = with pkgs; [ cmake ninja python3 git ];
     src = pkgs.fetchFromGitHub {
       owner = "llvm";
       repo = "circt";
-      rev = "da364ea448b70aaa710f9e17063ed745db23b463";
-      sha256 = "sha256-oS+wh/hJeJcXj5RoxsUOOX8wMsxgMAMdQtPpyENO0JM=";
+      rev = "6937e9b8b5e2a525f043ab89eb16812f92b42c62";
+      sha256 = "sha256-Lpu8J9izWvtYqibJQV0xEldk406PJobUM9WvTmNS3g4=";
       fetchSubmodules = true;
     };
     cmakeFlags = [
@@ -43,6 +43,15 @@ let
       mv bin/firtool $out/bin/firtool
     '';
   };
+
+  verilator = pkgs.verilator.overrideAttrs (old: {
+    src = pkgs.fetchFromGitHub {
+      owner = "verilator";
+      repo = "verilator";
+      rev = "2e4f5c863ffa6ab1afca883559ee5a6ca989e9d7";
+      sha256 = "sha256-jANlrumSGISeNB7MDrXqY2G6jMgrPApzk/1SoO92N2Y=";
+    };
+  });
 
   # nix cc-wrapper will add --gcc-toolchain to clang flags. However, when we want to use
   # our custom libc and compilerrt, clang will only search these libs in --gcc-toolchain 
@@ -72,6 +81,7 @@ in pkgs.mkShellNoCC {
       fmt glog
     ];
     shellHook = ''
+      export NIX_CC=" "
       # because we removed --gcc-toolchain from cc-wrapper, we need to add gcc lib path back
       export NIX_LDFLAGS_FOR_TARGET="$NIX_LDFLAGS_FOR_TARGET -L${pkgs.gccForLibs.lib}/lib"
     '';
