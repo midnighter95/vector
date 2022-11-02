@@ -57,6 +57,8 @@ insn_fetch_t VBridgeImpl::fetch_proc_insn() {
   return fetch;
 }
 
+// constructor
+// instantiate sim;isa;proc
 VBridgeImpl::VBridgeImpl() :
     sim(1 << 30),
     isa("rv32gcv", "M"),
@@ -164,12 +166,7 @@ void VBridgeImpl::run() {
       top.clock = 1;
       top.eval();
 
-      // Instruction is_issued, top.req_ready deps on top.req_bits_inst
-      if (top.req_ready) {
-        se_to_issue->is_issued = true;
-        LOG(INFO) << fmt::format("[{}] issue to rtl ({})", get_t(), se_to_issue->describe_insn());
-      }
-
+      // 
       receive_tl_req();
 
       // negedge
@@ -211,8 +208,9 @@ void VBridgeImpl::receive_tl_req() {
     uint32_t addr = TL(tlIdx, a_bits_address);
     uint8_t size = TL(tlIdx, a_bits_size);
     uint8_t src = TL(tlIdx, a_bits_source);   // MSHR id, TODO: be returned in D channel
-    uint32_t lsu_index = TL(tlIdx, a_bits_source) & 3;
+    uint32_t lsu_index = TL(tlIdx , a_bits_source) & 3;
     SpikeEvent *se;
+    // find the se in queue with correct lsu_index; set se to it
     for (auto se_iter = to_rtl_queue.rbegin(); se_iter != to_rtl_queue.rend(); se_iter++) {
       if (se_iter->lsu_idx == lsu_index) {
         se = &(*se_iter);

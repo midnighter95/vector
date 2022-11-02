@@ -1,6 +1,6 @@
 #include "vbridge.h"
 #include "vbridge_impl.h"
-
+// setup prameters for VBridgeImpl
 void VBridge::setup(const std::string &bin, const std::string &wave, uint64_t reset_vector, uint64_t cycles) const {
   impl->setup(bin, wave, reset_vector, cycles);
 }
@@ -13,7 +13,7 @@ VBridge::~VBridge() {
 void VBridge::loop() const {
   impl->run();
 }
-
+// pass arg to Verilated Context
 void VBridge::configure_simulator(int argc, char **argv) const {
   impl->configure_simulator(argc, argv);
 }

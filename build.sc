@@ -78,6 +78,7 @@ object vector extends common.VectorModule with ScalafmtModule { m =>
   def arithmeticModule = Some(myarithmetic)
   def tilelinkModule = Some(mytilelink)
   def utest: T[Dep] = v.utest
+  /** elaborate RTL; configure cmakelists for verilator; build emulator */
   object elaborate extends ScalaModule {
     override def defaultCommandName() = "default"
     override def scalaVersion = v.scala
@@ -85,6 +86,7 @@ object vector extends common.VectorModule with ScalafmtModule { m =>
     override def ivyDeps = T{ Seq(
       v.mainargs
     ) }
+    // todo: Is this the RTL generation?
     def rtls = T {
       mill.modules.Jvm.runSubprocess(
         finalMainClass(),
@@ -98,8 +100,12 @@ object vector extends common.VectorModule with ScalafmtModule { m =>
       T.log.info(s"RTL generated:\n${artifacts.mkString("\n")}")
       artifacts.map(PathRef(_))
     }
+    // path of verilator csrc use in cmake
     def csources = T.source { millSourcePath / "csrcs" }
+    // program src used in cmake
     def allCSourceFiles = T { Lib.findSourceFiles(Seq(csources()), Seq("S", "s", "c", "cpp", "cc")).map(PathRef(_)) }
+    // generate verilator cmake
+    // build emulator and return the path
     def verilated = T {
       val f = ujson.read(os.read(rtls().collectFirst{
         case f if (f.path.ext == "json") => f.path
@@ -116,6 +122,7 @@ object vector extends common.VectorModule with ScalafmtModule { m =>
         val S = s.split(">").last
         s"""//$t\npublic_flat_rd -module "$M" -var "$S""""
       }
+      // todo: what's for ?
       val verilatorConfig = T.dest / "verilator.vlt"
       os.write(verilatorConfig,
         s"""`verilator_config
@@ -282,6 +289,7 @@ object spike extends Module {
   }
 }
 
+// build target program
 object cases extends Module {
   trait Case extends Module {
     def name: T[String] = millSourcePath.last
@@ -319,7 +327,7 @@ object tests extends Module {
       PathRef(T.dest)
     }
   }
-
+  // have methods: tests.run; bin from
   object smoketest extends Case {
     def bin = cases.smoketest
   }
