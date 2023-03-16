@@ -94,13 +94,15 @@ class SRTWrapper extends Module {
   val divisor = Wire(UInt(33.W))
   val gap = Wire(UInt(34.W))
   val biggerdivisor = Wire(Bool())
+  val equal = Wire(Bool())
   dividend := abs.io.aOut
   divisor := abs.io.bOut
   gap := divisor +& (-dividend)
   biggerdivisor := gap(33) && !(gap(32, 0).orR === false.B)
+  equal := gap(32, 0).orR === false.B
 
   // bypass
-  val bypassSRT = (divideZero || biggerdivisor) && input.fire
+  val bypassSRT = (divideZero || biggerdivisor || equal) && input.fire
 
   /** Leading Zero component */
   // extend one bit for calculation
@@ -141,6 +143,8 @@ class SRTWrapper extends Module {
   // keep for one cycle
   val divideZeroReg = RegEnable(divideZero, false.B, input.fire)
   val biggerdivisorReg = RegEnable(biggerdivisor, false.B, input.fire)
+  val equalReg = RegEnable(equal, false.B, input.fire)
+  val negativeReg = RegEnable(negative, false.B, input.fire)
   val bypassSRTReg = RegNext(bypassSRT, false.B)
   val dividendReg = RegEnable(dividend, 0.U, input.fire)
   val dividendSignReg = RegEnable(abs.io.aSign, false.B, input.fire)
@@ -180,12 +184,12 @@ class SRTWrapper extends Module {
   output.bits.quotient := Mux(
     divideZeroReg,
     "hffffffff".U(32.W),
-    Mux(biggerdivisorReg, 0.U, Mux(negativeSRT, -quotientAbs, quotientAbs))
+    Mux(biggerdivisorReg, 0.U, Mux(equalReg, Mux(negativeReg, "hffffffff".U(32.W), 1.U), Mux(negativeSRT, -quotientAbs, quotientAbs)))
   ).asSInt
   output.bits.reminder := Mux(
     divideZeroReg,
     dividendRestore,
-    Mux(biggerdivisorReg, dividendRestore, Mux(dividendSignSRT, -remainderAbsFix, remainderAbsFix))
+    Mux(biggerdivisorReg, dividendRestore, Mux(equalReg, 0.U, Mux(dividendSignSRT, -remainderAbsFix, remainderAbsFix)))
   ).asSInt
 }
 
