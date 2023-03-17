@@ -172,8 +172,8 @@ class SRTWrapper extends Module {
   remainderAbsBias := srt.output.bits.reminder >> zeroHeadDivisorSRT(4, 0)
   remainderAbsFix := Mux(
     rightshiftNumberSRT === 2.U,
-    Cat(remainderAbsBias(31, 2), rightshiftBitsSRT(1, 0)),
-    Mux(rightshiftNumberSRT === 1.U, Cat(remainderAbsBias(31, 1), rightshiftBitsSRT(0)), remainderAbsBias)
+    remainderAbsBias + rightshiftBitsSRT(1, 0).asUInt,
+    Mux(rightshiftNumberSRT === 1.U, remainderAbsBias + rightshiftBitsSRT(0).asUInt, remainderAbsBias)
   )
 
   val dividendRestore = Wire(UInt(32.W))
@@ -184,7 +184,11 @@ class SRTWrapper extends Module {
   output.bits.quotient := Mux(
     divideZeroReg,
     "hffffffff".U(32.W),
-    Mux(biggerdivisorReg, 0.U, Mux(equalReg, Mux(negativeReg, "hffffffff".U(32.W), 1.U), Mux(negativeSRT, -quotientAbs, quotientAbs)))
+    Mux(
+      biggerdivisorReg,
+      0.U,
+      Mux(equalReg, Mux(negativeReg, "hffffffff".U(32.W), 1.U), Mux(negativeSRT, -quotientAbs, quotientAbs))
+    )
   ).asSInt
   output.bits.reminder := Mux(
     divideZeroReg,
